@@ -29,7 +29,7 @@ int main(int argc, char **argv)
 
   wiringPiSetupGpio(); // Initalize Pi
 
-  pinMode (17, PWM_OUTPUT) ;
+  pinMode (12, PWM_OUTPUT) ;
   pwmSetMode (PWM_MODE_MS);
 
   //pwmFrequency in Hz = 19.2e6 Hz / pwmClock / pwmRange.
@@ -38,20 +38,20 @@ int main(int argc, char **argv)
    pwmSetClock (192);
 
 
-  pwmWrite(17,pos); // 1.5 ms (0 degrees) 150 * .01ms = 1.5ms
+  pwmWrite(12,pos); // 1.5 ms (0 degrees) 150 * .01ms = 1.5ms
   delay(2000);
-  pwmWrite(18,250); // 2.0 ms (90 degrees)
+  pwmWrite(12,250); // 2.0 ms (90 degrees)
 
   ros::Rate r(10); // 10 hz
    while(ros::ok())
    {
      eq_pos = (0.963*pos) + 74.9;
-     pwmWrite(17,eq_pos);
+     pwmWrite(12,eq_pos);
      ros::spinOnce();
      r.sleep();
    }
 
-  pwmWrite(17,0); // 0 * .01ms = 0ms
+  pwmWrite(12,0); // 0 * .01ms = 0ms
 
   return 0;
 }
