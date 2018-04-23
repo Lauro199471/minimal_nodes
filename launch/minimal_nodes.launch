@@ -1,0 +1,3 @@
+<launch> 
+<node name= "minimal_wiringPi" pkg= "minimal_nodes" type= "minimal_wiringPi" /> 
+</launch> 
