@@ -29,7 +29,7 @@ int main(int argc, char **argv)
 
   wiringPiSetupGpio(); // Initalize Pi
 
-  pinMode (18, PWM_OUTPUT) ;
+  pinMode (17, PWM_OUTPUT) ;
   pwmSetMode (PWM_MODE_MS);
 
   //pwmFrequency in Hz = 19.2e6 Hz / pwmClock / pwmRange.
