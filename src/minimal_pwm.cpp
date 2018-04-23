@@ -38,7 +38,7 @@ int main(int argc, char **argv)
    pwmSetClock (192);
 
 
-  pwmWrite(18,pos); // 1.5 ms (0 degrees) 150 * .01ms = 1.5ms
+  pwmWrite(17,pos); // 1.5 ms (0 degrees) 150 * .01ms = 1.5ms
   delay(2000);
   pwmWrite(18,250); // 2.0 ms (90 degrees)
 
@@ -46,12 +46,12 @@ int main(int argc, char **argv)
    while(ros::ok())
    {
      eq_pos = (0.963*pos) + 74.9;
-     pwmWrite(18,eq_pos);
+     pwmWrite(17,eq_pos);
      ros::spinOnce();
      r.sleep();
    }
 
-  pwmWrite(18,0); // 0 * .01ms = 0ms
+  pwmWrite(17,0); // 0 * .01ms = 0ms
 
   return 0;
 }
