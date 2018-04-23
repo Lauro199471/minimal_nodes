@@ -1,3 +1,6 @@
+// Channel0: GPIO 18 , 12
+// Channel1: GPIO 13 , 19
+
 #include<ros/ros.h>   // Include ROS Library
 #include <wiringPi.h> // Include wiringPi Library
 #include <iostream>

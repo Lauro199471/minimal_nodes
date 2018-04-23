@@ -1,45 +1,71 @@
-#include "ros/ros.h"
-#include "sensor_msgs/Joy.h"
+// Channel0: GPIO 18 , 12
+// Channel1: GPIO 13 , 19
+
+#include<ros/ros.h>   // Include ROS Library
+#include <wiringPi.h> // Include wiringPi Library
 #include <iostream>
-#include <wiringPi.h>
+#include <softPwm.h>
+#include <std_msgs/UInt16.h>
 
 using namespace std;
 
-void chatterCallback(const sensor_msgs::Joy::ConstPtr& msg)
+int pos = 150;
+double eq_pos = 0;
+void myCallback(const std_msgs::UInt16& message_holder)
 {
-  cout << "Right Trigger: " << (msg->axes[2] + 1) * 500 << endl;
+  cout << "I heard: " << message_holder.data << endl;
+  pos = message_holder.data;
 }
 
 int main(int argc, char **argv)
 {
-
-  int gpiopin = 18;
-  int pwmClock = 1920;
-  int pwmRange = 200;
-
-  ros::init(argc, argv, "listener");
-  ros::NodeHandle n;
-
-  ros::Subscriber sub = n.subscribe("joy", 1000, chatterCallback);
- // ros::spin();
-
-  wiringPiSetup();
-  pinMode(gpiopin,OUTPUT);
-
-  pwmSetMode(PWM_MODE_MS);
-
-  //clock at 50Hz (20ms tick)
-  pwmSetClock(pwmClock);
-  pwmSetRange(pwmRange); //range at 200 ticks (20ms)
+  cout << "Raspberry Pi wiringPi test program\n";
 
 
-  while(ros::ok()) // Ctrl-C Handler
-  {
-    pwmWrite(gpiopin, 15);  //15 (1.5ms)
-  }
 
-  pwmWrite(gpiopin,0);
 
-  cout << "Finished" << endl;
+  ros::init(argc,argv,"minimal_pwm"); //name this node
+  // when this compiled code is run, ROS will recognize it as a node called "minimal_wiringPi"
+
+  ros::NodeHandle n; // need this to establish communications with our new node
+  ros::Subscriber my_subscriber_object= n.subscribe("Servo_POS",1,myCallback);
+
+  wiringPiSetupGpio(); // Initalize Pi
+
+  pinMode (12, PWM_OUTPUT);
+  pinMode (18, PWM_OUTPUT);
+
+  pwmSetMode (PWM_MODE_MS);
+
+  // pwmFrequency in Hz = (19.2e6 Hz / pwmClock) / pwmRange.
+  // 50Hz ---> 20ms per cycle. 20ms / 2000 units = 0.01ms per unit
+   pwmSetRange (2000);
+   pwmSetClock (192);
+
+
+  pwmWrite(12,pos); // 1.5 ms (0 degrees) 150 * .01ms = 1.5ms
+  pwmWrite(18,pos);
+
+  delay(2000);
+  pwmWrite(12,250); // 2.0 ms (90 degrees)
+  pwmWrite(18,250);
+
+  ros::Rate r(10); // 10 hz
+   while(ros::ok())
+   {
+     eq_pos = (0.963*pos) + 74.9;
+     pwmWrite(12,eq_pos);
+     pwmWrite(18,eq_pos);
+     ros::spinOnce();
+     r.sleep();
+   }
+
+  pwmWrite(12,0); // 0 * .01ms = 0ms
+  pwmWrite(18,0);
+
   return 0;
 }
+
+
+
+
