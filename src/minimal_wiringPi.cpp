@@ -1,7 +1,7 @@
 /*
  * Blink LED in Raspberry Pi 3
  *
- * Pin: GPIO18(Pin 12)
+ * Pin: GPIO17(Pin 11)
  *
 */
 #include <wiringPi.h>
@@ -17,7 +17,7 @@ using namespace std;
 
 int main (int argc, char **argv)
 {
-  int gpiopin = 18;
+  int gpiopin = 17;
   std_msgs::String msg;
   std::stringstream ss;
 
