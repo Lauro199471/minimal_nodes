@@ -49,12 +49,18 @@ struct acc_dat adxl345_read_xyz(int fd)
 
   x0 = 0xff - wiringPiI2CReadReg8(fd, 0x32);
   x1 = 0xff - wiringPiI2CReadReg8(fd, 0x33);
+
+  if(x1 == 0) // positive side
+    acc_xyz.x = x0;
+  else
+    acc_xyz.x = (x1 - x0) * -1;
+
   y0 = 0xff - wiringPiI2CReadReg8(fd, 0x34);
   y1 = 0xff - wiringPiI2CReadReg8(fd, 0x35);
   z0 = 0xff - wiringPiI2CReadReg8(fd, 0x36);
   z1 = 0xff - wiringPiI2CReadReg8(fd, 0x37);
 
-  acc_xyz.x = (int)(x1 << 8) + (int)x0;
+  //acc_xyz.x = (int)(x1 << 8) + (int)x0;
   acc_xyz.y = (int)(y1 << 8) + (int)y0;
   acc_xyz.z = (int)(z1 << 8) + (int)z0;
 
