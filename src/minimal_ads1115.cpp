@@ -15,14 +15,14 @@
 using namespace std;
 
 #define MY_BASE 2222
-#define JOY_RX 0
-#define JOY_RY 1
-#define POT 2
-#define TEMPERATURE 3
+#define ADC_CHANNEL_0 0
+#define ADC_CHANNEL_1 1
+#define ADC_CHANNEL_2 2
+#define ADC_CHANNEL_3 3
 
 int main (int argc, char **argv)
 {
-  int joy_x, joy_y, pot_val, temp_val;
+  int adc0, adc1, adc2, adc3;
 
   printf("Raspberry Pi wiringPi ADC1115 test\n");
 
@@ -36,17 +36,15 @@ int main (int argc, char **argv)
   //wiringPiSetupSys();
   wiringPiSetupGpio(); // Initalize Pi GPIO
 
-   ads1115Setup (MY_BASE, 0x48);
+  ads1115Setup (MY_BASE, 0x48);
 
-   while(1) {
-     joy_x = analogRead (MY_BASE + JOY_RX);
-     joy_y = analogRead (MY_BASE + JOY_RY);
-     pot_val = analogRead (MY_BASE + POT);
-     temp_val = analogRead (MY_BASE + TEMPERATURE);
-     printf("joy_x: %d\tjoy_y: %d\npot_val: %d\ntemp_val: %d\n", joy_x, joy_y, pot_val, temp_val);
-     sleep(1);
- }
-
-
+  while(ros::ok())
+  {
+    adc0 = analogRead (MY_BASE + ADC_CHANNEL_0);
+    adc1 = analogRead (MY_BASE + ADC_CHANNEL_1);
+    adc2 = analogRead (MY_BASE + ADC_CHANNEL_2);
+    adc3 = analogRead (MY_BASE + ADC_CHANNEL_3);
+    printf("Channel 0: %d\nChannel 1: %d\nChannel 2: %d\nChannel 3: %d\n\n\n", adc0, adc1, adc2, adc3);
+  }
   return 0;
 }
