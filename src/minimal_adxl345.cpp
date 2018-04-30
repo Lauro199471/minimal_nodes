@@ -80,11 +80,11 @@ int main(int argc, char **argv)
 
   adxl345_init(fd);
 
-  ros::Rate r(1000); // 1000 khz for spin (Industy Standard)
+  ros::Rate r(1); // 1hz for spin
   while(ros::ok)
   {
     acc_xyz = adxl345_read_xyz(fd);
-    printf("x: %05d  y: %05d  z: %05d\n", acc_xyz.x, acc_xyz.y, acc_xyz.z);
+    printf("x: %d  y: %d  z: %d\n", acc_xyz.x, acc_xyz.y, acc_xyz.z);
     r.sleep();
   }
 
