@@ -38,6 +38,7 @@ int main (int argc, char **argv)
 
   ads1115Setup (MY_BASE, 0x48);
 
+  ros::Rate r(1000); // 1000 khz for spin (Industy Standard)
   while(ros::ok())
   {
     adc0 = analogRead (MY_BASE + ADC_CHANNEL_0);
@@ -45,6 +46,7 @@ int main (int argc, char **argv)
     adc2 = analogRead (MY_BASE + ADC_CHANNEL_2);
     adc3 = analogRead (MY_BASE + ADC_CHANNEL_3);
     printf("Channel 0: %d\nChannel 1: %d\nChannel 2: %d\nChannel 3: %d\n\n\n", adc0, adc1, adc2, adc3);
+    r.sleep();
   }
   return 0;
 }
