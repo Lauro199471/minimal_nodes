@@ -38,7 +38,7 @@ int main (int argc, char **argv)
 
   ads1115Setup (MY_BASE, 0x48);
 
-  ros::Rate r(1000); // 1000 khz for spin (Industy Standard)
+  ros::Rate r(1); // 1000 khz for spin (Industy Standard)
   while(ros::ok())
   {
     adc0 = analogRead (MY_BASE + ADC_CHANNEL_0);
