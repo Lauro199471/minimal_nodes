@@ -58,6 +58,8 @@ struct acc_dat adxl345_read_xyz(int fd)
   acc_xyz.y = (int)(y1 << 8) + (int)y0;
   acc_xyz.z = (int)(z1 << 8) + (int)z0;
 
+  printf("x0: %d  x1: %d  y0: %d  y1: %d  z0: %d  z1: %d\n", x0, x1, y0, y1, z0, z1);
+
   return acc_xyz;
 }
 
