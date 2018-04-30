@@ -82,8 +82,8 @@ int main(int argc, char **argv)
 
   adxl345_init(fd);
 
-  ros::Rate r(1); // 1hz for spin
-  while(ros::ok)
+  ros::Rate r(3); // 1hz for spin
+  while(ros::ok())
   {
     acc_xyz = adxl345_read_xyz(fd);
     printf("x: %d  y: %d  z: %d\n", acc_xyz.x, acc_xyz.y, acc_xyz.z);
