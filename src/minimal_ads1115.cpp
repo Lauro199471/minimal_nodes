@@ -1,9 +1,3 @@
-/*
- * Blink LED in Raspberry Pi 3
- *
- * Pin: GPIO17(Pin 11)
- *
-*/
 #include <wiringPi.h>
 #include <stdio.h>
 #include <ros/ros.h>
@@ -34,6 +28,7 @@ int main (int argc, char **argv)
   ros::Publisher ads1115_pub = n.advertise<minimal_nodes::ads1115_sensorVal>("ads1115_values" , 1000);
   // ******************
 
+
   // Always initialise wiringPi. Use wiringPiSys() if you don't need
   //	(or want) to run as root
   //wiringPiSetupSys();
@@ -42,8 +37,10 @@ int main (int argc, char **argv)
   ads1115Setup (MY_BASE, 0x48);
 
   ros::Rate r(1000); // 1000 khz for spin (Industy Standard)
+
   while(ros::ok())
   {
+
     adc0 = analogRead (MY_BASE + ADC_CHANNEL_0);
     adc1 = analogRead (MY_BASE + ADC_CHANNEL_1);
     adc2 = analogRead (MY_BASE + ADC_CHANNEL_2);
@@ -52,9 +49,13 @@ int main (int argc, char **argv)
 
     // This is a message object. You stuff it with data, and then publish it.
     minimal_nodes::ads1115_sensorVal ads1115_msb_obj;
-    ads1115_msb_obj.analog_values[0] = adc0;
+    ads1115_msb_obj.analog_values.push_back(10);
+    ads1115_msb_obj.analog_values.push_back(20);
+    ads1115_msb_obj.analog_values.push_back(30);
+    ads1115_msb_obj.analog_values.push_back(40);
     ads1115_pub.publish(ads1115_msb_obj);
 
+    ros::spinOnce();
     r.sleep();
   }
   return 0;
