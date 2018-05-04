@@ -29,23 +29,23 @@ int main (int argc, char **argv)
   // ******************
 
 
-  // Always initialise wiringPi. Use wiringPiSys() if you don't need
+  /* Always initialise wiringPi. Use wiringPiSys() if you don't need
   //	(or want) to run as root
   //wiringPiSetupSys();
   wiringPiSetupGpio(); // Initalize Pi GPIO
 
-  ads1115Setup (MY_BASE, 0x48);
+  ads1115Setup (MY_BASE, 0x48);*/
 
   ros::Rate r(1000); // 1000 khz for spin (Industy Standard)
 
   while(ros::ok())
   {
-
+    /*
     adc0 = analogRead (MY_BASE + ADC_CHANNEL_0);
     adc1 = analogRead (MY_BASE + ADC_CHANNEL_1);
     adc2 = analogRead (MY_BASE + ADC_CHANNEL_2);
     adc3 = analogRead (MY_BASE + ADC_CHANNEL_3);
-    printf("Channel 0: %d\nChannel 1: %d\nChannel 2: %d\nChannel 3: %d\n\n\n", adc0, adc1, adc2, adc3);
+    printf("Channel 0: %d\nChannel 1: %d\nChannel 2: %d\nChannel 3: %d\n\n\n", adc0, adc1, adc2, adc3);*/
 
     // This is a message object. You stuff it with data, and then publish it.
     minimal_nodes::ads1115_sensorVal ads1115_msb_obj;
