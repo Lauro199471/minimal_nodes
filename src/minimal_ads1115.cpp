@@ -49,10 +49,10 @@ int main (int argc, char **argv)
 
     // This is a message object. You stuff it with data, and then publish it.
     minimal_nodes::ads1115_sensorVal ads1115_msb_obj;
-    ads1115_msb_obj.analog_values.push_back(10);
-    ads1115_msb_obj.analog_values.push_back(20);
-    ads1115_msb_obj.analog_values.push_back(30);
-    ads1115_msb_obj.analog_values.push_back(40);
+    ads1115_msb_obj.analog_values.push_back(adc0);
+    ads1115_msb_obj.analog_values.push_back(adc1);
+    ads1115_msb_obj.analog_values.push_back(adc2);
+    ads1115_msb_obj.analog_values.push_back(adc3);
     ads1115_pub.publish(ads1115_msb_obj);
 
     ros::spinOnce();
