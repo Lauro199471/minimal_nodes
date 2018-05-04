@@ -7,11 +7,21 @@ project(minimal_nodes)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  message_generation
 )
 
 find_package(Boost REQUIRED COMPONENTS system)
 FIND_LIBRARY(WIRINGPI_LIBRARY wiringPi /opt/wiringPi)
 
+add_message_files(
+  FILES
+  ads1115_sensorVal.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 
 ###########

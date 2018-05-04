@@ -8,9 +8,11 @@
 #include <stdio.h>
 #include <ros/ros.h>
 #include <iostream>
-#include "std_msgs/String.h"
 #include <sstream>
 #include <ads1115.h>
+
+// My Custom Message
+#include "minimal_nodes/ads1115_sensorVal.h"
 
 using namespace std;
 
@@ -29,6 +31,7 @@ int main (int argc, char **argv)
   // *** ROS Stuff ****
   ros::init(argc,argv,"minimal_ads1115"); //name this node
   ros::NodeHandle n; // need this to establish communications with our new node
+  ros::Publisher ads1115_pub = n.advertise<minimal_nodes::ads1115_sensorVal>("ads1115_values" , 1000);
   // ******************
 
   // Always initialise wiringPi. Use wiringPiSys() if you don't need
@@ -46,6 +49,12 @@ int main (int argc, char **argv)
     adc2 = analogRead (MY_BASE + ADC_CHANNEL_2);
     adc3 = analogRead (MY_BASE + ADC_CHANNEL_3);
     printf("Channel 0: %d\nChannel 1: %d\nChannel 2: %d\nChannel 3: %d\n\n\n", adc0, adc1, adc2, adc3);
+
+    // This is a message object. You stuff it with data, and then publish it.
+    minimal_nodes::ads1115_sensorVal ads1115_msb_obj;
+    ads1115_msb_obj.analog_values[0] = adc0;
+    ads1115_pub.publish(ads1115_msb_obj);
+
     r.sleep();
   }
   return 0;
