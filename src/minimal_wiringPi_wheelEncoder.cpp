@@ -1,23 +1,15 @@
-/*
- * Wheel Encoder in Raspberry Pi 3
- *
- * Encoder Pin: CLK --> A Clk
- *              DT  --> B Clk
- *              SW --> PushButton
- *
-*/
-#include <wiringPi.h>
 #include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <wiringPi.h>
 #include <ros/ros.h>
-#include <iostream>
-#include <sstream>
 
-using namespace std;
+#define  RoAPin    0
+#define  RoBPin    1
+#define  RoSPin    2
 
-#define RoAPin 0
-#define RoBPin 1
-
-static volatile int globalCounter = 0;
+static volatile int globalCounter = 0 ;
 
 unsigned char flag;
 unsigned char Last_RoB_Status;
@@ -26,48 +18,56 @@ unsigned char Current_RoB_Status;
 void rotaryDeal(void)
 {
     Last_RoB_Status = digitalRead(RoBPin);
-    while(!digitalRead(RoAPin))
-    {
+
+    while(!digitalRead(RoAPin) && ros::ok()){
         Current_RoB_Status = digitalRead(RoBPin);
         flag = 1;
     }
 
-    if(flag == 1)
-    {
+    if(flag == 1){
         flag = 0;
-        if((Last_RoB_Status == 0) && (Current_RoB_Status == 1))
-            globalCounter++;
-        if((Last_RoB_Status == 1) && (Current_RoB_Status == 0))
-            globalCounter--;
+        if((Last_RoB_Status == 0)&&(Current_RoB_Status == 1)){
+            globalCounter ++;
+            printf("globalCounter : %d\n",globalCounter);
+        }
+        if((Last_RoB_Status == 1)&&(Current_RoB_Status == 0)){
+            globalCounter --;
+            printf("globalCounter : %d\n",globalCounter);
+        }
+
     }
 }
 
-int main (int argc, char **argv)
+void rotaryClear(void)
 {
-  int gpiopin = 17;
-  std::stringstream ss;
+    if(digitalRead(RoSPin) == 0)
+    {
+        globalCounter = 0;
+        printf("globalCounter : %d\n",globalCounter);
+        delay(1000);
+    }
+}
 
-  printf("Raspberry Pi wiringPi Wheel Encoder test\n");
+int main(int argc, char **argv)
+{
+    ros::init(argc,argv,"minimal_wheel_encoder"); //name this node
+    ros::NodeHandle n; // need this to establish communications with our new node
 
-  // *** ROS Stuff ****
-  ros::init(argc,argv,"wheel_encoder"); //name this node
-  ros::NodeHandle n; // need this to establish communications with our new node
-  printf("1\n");
-  // ******************
+    if(wiringPiSetup() < 0){
+        fprintf(stderr, "Unable to setup wiringPi:%s\n",strerror(errno));
+        return 1;
+    }
 
-  // Always initialise wiringPi. Use wiringPiSys() if you don't need
-  //	(or want) to run as root
-  //wiringPiSetupSys();
-  wiringPiSetupGpio(); // Initalize Pi GPIO
-  printf("2\n");
-  pinMode(RoAPin, OUTPUT);
-  pinMode(RoBPin, OUTPUT);
+    pinMode(RoAPin, INPUT);
+    pinMode(RoBPin, INPUT);
+    pinMode(RoSPin, INPUT);
 
-  printf("3\n");
-  while(ros::ok())
-  {
-    rotaryDeal();
-    cout << "Counter: " << globalCounter << endl;
-  }
-  return 0;
+    pullUpDnControl(RoSPin, PUD_UP);
+
+    while(ros::ok()){
+        rotaryDeal();
+        rotaryClear();
+    }
+
+    return 0;
 }
