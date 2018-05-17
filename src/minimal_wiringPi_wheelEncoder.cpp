@@ -52,16 +52,18 @@ int main (int argc, char **argv)
   // *** ROS Stuff ****
   ros::init(argc,argv,"wheel_encoder"); //name this node
   ros::NodeHandle n; // need this to establish communications with our new node
+  printf("1\n");
   // ******************
 
   // Always initialise wiringPi. Use wiringPiSys() if you don't need
   //	(or want) to run as root
   //wiringPiSetupSys();
   wiringPiSetupGpio(); // Initalize Pi GPIO
-
+  printf("2\n");
   pinMode(RoAPin, OUTPUT);
   pinMode(RoBPin, OUTPUT);
 
+  printf("3\n");
   while(ros::ok())
   {
     rotaryDeal();

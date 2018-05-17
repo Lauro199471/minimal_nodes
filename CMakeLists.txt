@@ -51,7 +51,7 @@ add_dependencies(minimal_pwm minimal_nodes_generate_messages_cpp wiringPi)
 add_dependencies(xbox_to_pwm minimal_nodes_generate_messages_cpp wiringPi)
 add_dependencies(minimal_ads1115 minimal_nodes_generate_messages_cpp wiringPi)
 add_dependencies(minimal_adxl345 minimal_nodes_generate_messages_cpp wiringPi)
-add_dependencies(minimal_wiringPi_wheelEncoder minimal_nodes_generate_messages_cpp wiringPi)
+add_dependencies(minimal_wiringPi_wheelEncoder minimal_wiringPi_wheelEncoder_generate_messages_cpp wiringPi)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(minimal_publisher  ${catkin_LIBRARIES} )
