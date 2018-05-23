@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   message_generation
+  qt_build
 )
 
 find_package(Boost REQUIRED COMPONENTS system)
@@ -24,6 +25,12 @@ generate_messages(
 )
 
 
+##############################################################################
+# Sources
+##############################################################################
+
+file(GLOB_RECURSE QT_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} FOLLOW_SYMLINKS src/*.cpp)
+
 ###########
 ## Build ##
 ###########
@@ -32,6 +39,7 @@ generate_messages(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(${catkin_INCLUDE_DIRS} ${WIRINGPI_LIBRARY})
+catkin_package()
 
 ## Declare a cpp executable
 add_executable(minimal_publisher src/minimal_publisher.cpp)
@@ -44,6 +52,7 @@ add_executable(xbox_to_pwm src/xbox_to_pwm.cpp)
 add_executable(minimal_ads1115 src/minimal_ads1115.cpp)
 add_executable(minimal_adxl345 src/minimal_adxl345.cpp)
 add_executable(minimal_wiringPi_wheelEncoder src/minimal_wiringPi_wheelEncoder.cpp)
+add_executable(minimal_pca9685 src/minimal_pca9685.cpp src/pca9685.cpp)
 
 ## Add cmake target dependencies of the executable/library
 add_dependencies(minimal_wiringPi minimal_nodes_generate_messages_cpp wiringPi)
@@ -52,6 +61,8 @@ add_dependencies(xbox_to_pwm minimal_nodes_generate_messages_cpp wiringPi)
 add_dependencies(minimal_ads1115 minimal_nodes_generate_messages_cpp wiringPi)
 add_dependencies(minimal_adxl345 minimal_nodes_generate_messages_cpp wiringPi)
 add_dependencies(minimal_wiringPi_wheelEncoder minimal_wiringPi_wheelEncoder_generate_messages_cpp wiringPi)
+add_dependencies(minimal_pca9685 minimal_wiringPi_wheelEncoder_generate_messages_cpp wiringPi /src)
+
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(minimal_publisher  ${catkin_LIBRARIES} )
@@ -64,6 +75,6 @@ target_link_libraries(xbox_to_pwm  ${catkin_LIBRARIES} ${WIRINGPI_LIBRARY})
 target_link_libraries(minimal_ads1115  ${catkin_LIBRARIES} ${WIRINGPI_LIBRARY})
 target_link_libraries(minimal_adxl345  ${catkin_LIBRARIES} ${WIRINGPI_LIBRARY})
 target_link_libraries(minimal_wiringPi_wheelEncoder  ${catkin_LIBRARIES} ${WIRINGPI_LIBRARY})
-
+target_link_libraries(minimal_pca9685  ${catkin_LIBRARIES} ${WIRINGPI_LIBRARY})
 
 
