@@ -8,7 +8,7 @@
 #include "colors.h"
 #include "pca9685.h"
 
-#define PIN_BASE 300
+#define PIN_BASE 100
 #define MAX_PWM 4096
 #define HERTZ 50
 
