@@ -37,19 +37,19 @@ int main(int argc, char **argv)
     cout << ANSI_COLOR_RED << "ALL PINS" << ANSI_COLOR_RESET << endl;
     for (j = 0; j < 20; j++)
     {
-      if(ros::ok)
+      if(ros::ok())
         break;
 
-      for (i = 0; i < MAX_PWM; i += 16) // 16 because its too slow to light up and dim
+      for (i = 0; i < MAX_PWM; i += 8) // 8 because its too slow to light up and dim
       {
         pwmWrite(PIN_BASE + NUM_PINS, i);
-        delay(1);
+        delay(5);
       }
 
-      for (i = 0; i < MAX_PWM; i += 16)
+      for (i = 0; i < MAX_PWM; i += 8)
       {
         pwmWrite(PIN_BASE + NUM_PINS, MAX_PWM - i);
-        delay(1);
+        delay(5);
       }
     }
 
@@ -60,7 +60,7 @@ int main(int argc, char **argv)
     cout << ANSI_COLOR_MAGENTA << "ONE BY ONE" << ANSI_COLOR_RESET << endl;
     for (j = 0; j < 20; j++)
     {
-      if(ros::ok)
+      if(ros::ok())
         break;
 
       for (i = 0; i < 16; i++)
