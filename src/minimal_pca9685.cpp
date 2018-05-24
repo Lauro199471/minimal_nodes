@@ -35,15 +35,15 @@ int main(int argc, char **argv)
   {
     // Make ALL pins dim down and up
     cout << ANSI_COLOR_RED << "ALL PINS" << ANSI_COLOR_RESET << endl;
-    for (j = 0; j < 100; j++)
+    for (j = 0; j < 20; j++)
     {
-      for (i = 0; i < MAX_PWM; i += 1)
+      for (i = 0; i < MAX_PWM; i += 16) // 16 because its too slow to light up and dim
       {
         pwmWrite(PIN_BASE + NUM_PINS, i);
         delay(1);
       }
 
-      for (i = 0; i < MAX_PWM; i += 1)
+      for (i = 0; i < MAX_PWM; i += 16)
       {
         pwmWrite(PIN_BASE + NUM_PINS, MAX_PWM - i);
         delay(1);
