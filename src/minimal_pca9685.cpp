@@ -1,68 +1,70 @@
 #include <ros/ros.h>
 #include <iostream>
-#include "pca9685.h"
+#include <wiringPi.h>
+#include <wiringPiI2C.h>
 #include <stdio.h>
-#include <signal.h>
 #include <stdlib.h>
+
+#include "colors.h"
+#include "pca9685.h"
+
+#define PIN_BASE 300
+#define MAX_PWM 4096
+#define HERTZ 50
 
 using namespace std;
 
-#define ANSI_COLOR_RED     "\x1b[31m"
-#define ANSI_COLOR_GREEN   "\x1b[32m"
-#define ANSI_COLOR_YELLOW  "\x1b[33m"
-#define ANSI_COLOR_BLUE    "\x1b[34m"
-#define ANSI_COLOR_MAGENTA "\x1b[35m"
-#define ANSI_COLOR_CYAN    "\x1b[36m"
-#define ANSI_COLOR_RESET   "\x1b[0m"
-
 int main(int argc, char **argv)
 {
-  uint8_t value;
-  PCA9685_MODE1_t mode1;
-
+  int i = 0, j = 0;
   ros::init(argc, argv, "minimal_pca9685");
   ros::NodeHandle nh;
-  cout << "\nHello World - Lauro\n";
-  printf(ANSI_COLOR_BLUE "Entry" ANSI_COLOR_RED "\n");    //ANSI_COLOR_RED catches SUDO exception, clears after init.
+  cout << ANSI_COLOR_GREEN << "\nPCA9685 LED\n" << ANSI_COLOR_RESET;
 
-  PCA9685_init(0x60, 200);
-  printf(ANSI_COLOR_RESET);
-  PCA9685_Restart();
-
-  mode1.fields.extClk = 0;
-  mode1.fields.sleep = 1;
-  mode1.fields.allCall = 0;
-
-  PCA9685_WriteRegister(PCA9685_MODE1, mode1.raw);
-
-  value = PCA9685_ReadRegister(PCA9685_MODE1);
-  printf("0x%x\n", value);
-
-  value = PCA9685_ReadRegister(PCA9685_MODE2);
-  printf("0x%x\n", value);
-
-  PCA9685_PrintStatus();
-  printf("\n");
-
-  PCA9685_Restart();
-
-  mode1.fields.extClk = 0;
-  mode1.fields.sleep = 0;
-  mode1.fields.allCall = 0;
-
-  PCA9685_WriteRegister(PCA9685_MODE1, mode1.raw);
-  PCA9685_PrintStatus();
-  printf("\n");
-
-  while(ros::ok()) {
-      for (uint16_t i=0; i <= 4096; i++) {
-          PCA9685_SetPWM(ch0, i);
-      }
+  int fd = pca9685Setup(PIN_BASE, 0x40, HERTZ);
+  if (fd < 0)
+  {
+    printf("Error in setup\n");
+    return fd;
   }
 
+  pca9685PWMReset(fd);
 
-  printf(ANSI_COLOR_BLUE "Exit\n" ANSI_COLOR_RESET);
-  return 0;
+  while(ros::ok())
+  {
+    for (j = 0; j < 5; j++)
+    {
+      for (i = 0; i < MAX_PWM; i += 32)
+      {
+        pwmWrite(PIN_BASE + 16, i);
+        delay(4);
+      }
 
+      for (i = 0; i < MAX_PWM; i += 32)
+      {
+        pwmWrite(PIN_BASE + 16, MAX_PWM - i);
+        delay(4);
+      }
+    }
+
+    pwmWrite(PIN_BASE + 16, 0);
+    delay(500);
+
+    for (j = 0; j < 5; j++)
+    {
+      for (i = 0; i < 16; i++)
+      {
+        pwmWrite(PIN_BASE + i, MAX_PWM);
+        delay(20);
+      }
+      for (i = 0; i < 16; i++)
+      {
+        pwmWrite(PIN_BASE + i, 0);
+        delay(20);
+      }
+    }
+    pwmWrite(PIN_BASE + 16, 0);
+    delay(500);
+  }
   return 0;
 }

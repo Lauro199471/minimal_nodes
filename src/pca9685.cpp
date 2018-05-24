@@ -1,300 +1,290 @@
-/**
- * @file pca9685.c
- * @author Patrick Kramer
- * @copyright MIT License
- * @date Dec 28 2017
- * @brief Implementation of the control functions for the PC9685 Library
+/*************************************************************************
+ * pca9685.c
  *
- * This library requires the PC9685_Init() function to be called to set the global i2c_fd file-handle; i2c_fd is used by
- * both the PC9685_WriteRegister and PC9685_ReadRegister functions.
- * TODO: Implement a new method to allow multiple file-handles; this should be a c++ object.
+ * This software is a devLib extension to wiringPi <http://wiringpi.com/>
+ * and enables it to control the Adafruit PCA9685 16-Channel 12-bit
+ * PWM/Servo Driver <http://www.adafruit.com/products/815> via I2C interface.
  *
- * The remaining functions in the libraray exist to narrowly implement tasks using the register read/write functions.
+ * Copyright (c) 2014 Reinhard Sprung
+ *
+ * If you have questions or improvements email me at
+ * reinhard.sprung[at]gmail.com
+ *
+ * This software is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The given code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You can view the contents of the licence at <http://www.gnu.org/licenses/>.
+ **************************************************************************
  */
 
-
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdio.h>
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
 
 #include "pca9685.h"
 
-#define tcOFF       "\x1b[31m"
-#define tcON        "\x1b[32m"
-#define tcRESET     "\x1b[0m"
+// Setup registers
+#define PCA9685_MODE1 0x0
+#define PCA9685_PRESCALE 0xFE
 
-static uint8_t i2c_fd;
+// Define first LED and all LED. We calculate the rest
+#define LED0_ON_L 0x6
+#define LEDALL_ON_L 0xFA
 
-uint8_t PCA9685_init(uint8_t i2cAddress, uint8_t i2cSpeed) {
+#define PIN_ALL 16
 
-    uint8_t status;
 
-    status = wiringPiSetup();
-    if (status != 0) {
-        return ((uint8_t) -1);
-    }
+// Declare
+static void myPwmWrite(struct wiringPiNodeStruct *node, int pin, int value);
+static void myOnOffWrite(struct wiringPiNodeStruct *node, int pin, int value);
+static int myOffRead(struct wiringPiNodeStruct *node, int pin);
+static int myOnRead(struct wiringPiNodeStruct *node, int pin);
+int baseReg(int pin);
 
-    i2c_fd = wiringPiI2CSetup(i2cAddress);
+
+/**
+ * Setup a PCA9685 device with wiringPi.
+ *
+ * pinBase: 	Use a pinBase > 64, eg. 300
+ * i2cAddress:	The default address is 0x40
+ * freq:		Frequency will be capped to range [40..1000] Hertz. Try 50 for servos
+ */
+int pca9685Setup(const int pinBase, const int i2cAddress, float freq)
+{
+   wiringPiSetupGpio(); // Initalize Pi GPIO
+  // Create a node with 16 pins [0..15] + [16] for all
+  struct wiringPiNodeStruct *node = wiringPiNewNode(pinBase, PIN_ALL + 1);
+
+  // Check if pinBase is available
+  if (!node)
+    return -1;
+
+  // Check i2c address
+  int fd = wiringPiI2CSetup(i2cAddress);
+  if (fd < 0)
+    return fd;
+
+  // Setup the chip. Enable auto-increment of registers.
+  int settings = wiringPiI2CReadReg8(fd, PCA9685_MODE1) & 0x7F;
+  int autoInc = settings | 0x20;
+
+  wiringPiI2CWriteReg8(fd, PCA9685_MODE1, autoInc);
+
+  // Set frequency of PWM signals. Also ends sleep mode and starts PWM output.
+  if (freq > 0)
+    pca9685PWMFreq(fd, freq);
+
+
+  node->fd			= fd;
+  node->pwmWrite		= myPwmWrite;
+  node->digitalWrite	= myOnOffWrite;
+  node->digitalRead	= myOffRead;
+  node->analogRead	= myOnRead;
+
+  return fd;
 }
 
-void PCA9685_WriteRegister(uint8_t address, uint8_t value) {
+/**
+ * Sets the frequency of PWM signals.
+ * Frequency will be capped to range [40..1000] Hertz. Try 50 for servos.
+ */
+void pca9685PWMFreq(int fd, float freq)
+{
+  // Cap at min and max
+  freq = (freq > 1000 ? 1000 : (freq < 40 ? 40 : freq));
 
-    wiringPiI2CWriteReg8(i2c_fd, address, value);
+  // To set pwm frequency we have to set the prescale register. The formula is:
+  // prescale = round(osc_clock / (4096 * frequency))) - 1 where osc_clock = 25 MHz
+  // Further info here: http://www.nxp.com/documents/data_sheet/PCA9685.pdf Page 24
+  int prescale = (int)(25000000.0f / (4096 * freq) - 0.5f);
+
+  // Get settings and calc bytes for the different states.
+  int settings = wiringPiI2CReadReg8(fd, PCA9685_MODE1) & 0x7F;	// Set restart bit to 0
+  int sleep	= settings | 0x10;									// Set sleep bit to 1
+  int wake 	= settings & 0xEF;									// Set sleep bit to 0
+  int restart = wake | 0x80;										// Set restart bit to 1
+
+  // Go to sleep, set prescale and wake up again.
+  wiringPiI2CWriteReg8(fd, PCA9685_MODE1, sleep);
+  wiringPiI2CWriteReg8(fd, PCA9685_PRESCALE, prescale);
+  wiringPiI2CWriteReg8(fd, PCA9685_MODE1, wake);
+
+  // Now wait a millisecond until oscillator finished stabilizing and restart PWM.
+  delay(1);
+  wiringPiI2CWriteReg8(fd, PCA9685_MODE1, restart);
 }
 
-uint8_t PCA9685_ReadRegister(uint8_t address) {
+/**
+ * Set all leds back to default values (: fullOff = 1)
+ */
+void pca9685PWMReset(int fd)
+{
+  wiringPiI2CWriteReg16(fd, LEDALL_ON_L	 , 0x0);
+  wiringPiI2CWriteReg16(fd, LEDALL_ON_L + 2, 0x1000);
+}
 
-    return wiringPiI2CReadReg8(i2c_fd, address);
+/**
+ * Write on and off ticks manually to a pin
+ * (Deactivates any full-on and full-off)
+ */
+void pca9685PWMWrite(int fd, int pin, int on, int off)
+{
+  int reg = baseReg(pin);
+
+  // Write to on and off registers and mask the 12 lowest bits of data to overwrite full-on and off
+  wiringPiI2CWriteReg16(fd, reg	 , on  & 0x0FFF);
+  wiringPiI2CWriteReg16(fd, reg + 2, off & 0x0FFF);
+}
+
+/**
+ * Reads both on and off registers as 16 bit of data
+ * To get PWM: mask each value with 0xFFF
+ * To get full-on or off bit: mask with 0x1000
+ * Note: ALL_LED pin will always return 0
+ */
+void pca9685PWMRead(int fd, int pin, int *on, int *off)
+{
+  int reg = baseReg(pin);
+
+  if (on)
+    *on  = wiringPiI2CReadReg16(fd, reg);
+  if (off)
+    *off = wiringPiI2CReadReg16(fd, reg + 2);
+}
+
+/**
+ * Enables or deactivates full-on
+ * tf = true: full-on
+ * tf = false: according to PWM
+ */
+void pca9685FullOn(int fd, int pin, int tf)
+{
+  int reg = baseReg(pin) + 1;		// LEDX_ON_H
+  int state = wiringPiI2CReadReg8(fd, reg);
+
+  // Set bit 4 to 1 or 0 accordingly
+  state = tf ? (state | 0x10) : (state & 0xEF);
+
+  wiringPiI2CWriteReg8(fd, reg, state);
+
+  // For simplicity, we set full-off to 0 because it has priority over full-on
+  if (tf)
+    pca9685FullOff(fd, pin, 0);
+}
+
+/**
+ * Enables or deactivates full-off
+ * tf = true: full-off
+ * tf = false: according to PWM or full-on
+ */
+void pca9685FullOff(int fd, int pin, int tf)
+{
+  int reg = baseReg(pin) + 3;		// LEDX_OFF_H
+  int state = wiringPiI2CReadReg8(fd, reg);
+
+  // Set bit 4 to 1 or 0 accordingly
+  state = tf ? (state | 0x10) : (state & 0xEF);
+
+  wiringPiI2CWriteReg8(fd, reg, state);
+}
+
+/**
+ * Helper function to get to register
+ */
+int baseReg(int pin)
+{
+  return (pin >= PIN_ALL ? LEDALL_ON_L : LED0_ON_L + 4 * pin);
 }
 
 
-void PCA9685_PrintStatus() {
 
-    PCA9685_MODE1_t mode1;
-    PCA9685_MODE2_t mode2;
 
-    mode1.raw = PCA9685_ReadRegister(PCA9685_MODE1);
-    mode2.raw = PCA9685_ReadRegister(PCA9685_MODE2);
+//------------------------------------------------------------------------------------------------------------------
+//
+//	WiringPi functions
+//
+//------------------------------------------------------------------------------------------------------------------
 
-    printf("\nRESET\t"tcRESET);
 
-    if (mode1.fields.extClk == 1) {
-        printf(tcON"EXTCLK\t"tcRESET);
-    } else {
-        printf(tcOFF"EXTCLK\t"tcRESET);
-    }
 
-    if (mode1.fields.autoIncrement == 1) {
-        printf(tcON"AUTO\t"tcRESET);
-    } else {
-        printf(tcOFF"AUTO\t"tcRESET);
-    }
 
-    if (mode1.fields.sleep == 1) {
-        printf(tcON"SLEEP\t"tcRESET);
-    } else {
-        printf(tcOFF"SLEEP\t"tcRESET);
-    }
+/**
+ * Simple PWM control which sets on-tick to 0 and off-tick to value.
+ * If value is <= 0, full-off will be enabled
+ * If value is >= 4096, full-on will be enabled
+ * Every value in between enables PWM output
+ */
+static void myPwmWrite(struct wiringPiNodeStruct *node, int pin, int value)
+{
+  int fd   = node->fd;
+  int ipin = pin - node->pinBase;
 
-    if (mode1.fields.sub1 == 1) {
-        printf(tcON"SUB1\t"tcRESET);
-    } else {
-        printf(tcOFF"SUB1\t"tcRESET);
-    }
-
-    if (mode1.fields.sub2 == 1) {
-        printf(tcON"SUB2\t"tcRESET);
-    } else {
-        printf(tcOFF"SUB2\t"tcRESET);
-    }
-
-    if (mode1.fields.sub3 == 1) {
-        printf(tcON"SUB3\t"tcRESET);
-    } else {
-        printf(tcOFF"SUB3\t"tcRESET);
-    }
-
-    if (mode1.fields.allCall == 1) {
-        printf(tcON"ALLCALL\n"tcRESET);
-    } else {
-        printf(tcOFF"ALLCALL\n"tcRESET);
-    }
-
-    if (mode2.fields.invert == 1) {
-        printf(tcON"INVRT\t"tcRESET);
-    } else {
-        printf(tcOFF"INVRT\t"tcRESET);
-    }
-
-    if (mode2.fields.outputChange == 1) {
-        printf(tcON"OCH\t"tcRESET);
-    } else {
-        printf(tcOFF"OCH\t"tcRESET);
-    }
-
-    if (mode2.fields.outputDrive == 1) {
-        printf(tcON"OUTDRV\t"tcRESET);
-    } else {
-        printf(tcOFF"OUTDRV\t"tcRESET);
-    }
-
-    if (mode2.fields.outputNegation == 1) {
-        printf(tcON"OUTNE\n"tcRESET);
-    } else {
-        printf(tcOFF"OUTNE\n"tcRESET);
-    }
+  if (value >= 4096)
+    pca9685FullOn(fd, ipin, 1);
+  else if (value > 0)
+    pca9685PWMWrite(fd, ipin, 0, value);	// (Deactivates full-on and off by itself)
+  else
+    pca9685FullOff(fd, ipin, 1);
 }
 
-void PCA9685_SetPWM(PCA9685_Channel_e channel, uint16_t dutyCycle) {
+/**
+ * Simple full-on and full-off control
+ * If value is 0, full-off will be enabled
+ * If value is not 0, full-on will be enabled
+ */
+static void myOnOffWrite(struct wiringPiNodeStruct *node, int pin, int value)
+{
+  int fd   = node->fd;
+  int ipin = pin - node->pinBase;
 
-    PCA9685_ChannelRegisters_t registers;
-    PCA9685_LED_OFF_H_t OFF_H;
-    PCA9685_LED_OFF_L_t OFF_L;
-    PCA9685_LED_ON_H_t ON_H;
-    PCA9685_LED_ON_L_t ON_L;
-
-    OFF_H.raw = 0;
-    OFF_L.raw = 0;
-    ON_H.raw = 0;
-    ON_L.raw = 0;
-
-    switch(channel) {
-        case ch0:
-            registers.OFF_H = PCA9685_LED0_OFF_H;
-            registers.OFF_L = PCA9685_LED0_OFF_L;
-            registers.ON_H = PCA9685_LED0_ON_H;
-            registers.ON_L = PCA9685_LED0_ON_L;
-            break;
-
-        case ch1:
-            registers.OFF_H = PCA9685_LED1_OFF_H;
-            registers.OFF_L = PCA9685_LED1_OFF_L;
-            registers.ON_H = PCA9685_LED1_ON_H;
-            registers.ON_L = PCA9685_LED1_ON_L;
-            break;
-
-        case ch2:
-            registers.OFF_H = PCA9685_LED2_OFF_H;
-            registers.OFF_L = PCA9685_LED2_OFF_L;
-            registers.ON_H = PCA9685_LED2_ON_H;
-            registers.ON_L = PCA9685_LED2_ON_L;
-            break;
-
-        case ch3:
-            registers.OFF_H = PCA9685_LED3_OFF_H;
-            registers.OFF_L = PCA9685_LED3_OFF_L;
-            registers.ON_H = PCA9685_LED3_ON_H;
-            registers.ON_L = PCA9685_LED3_ON_L;
-            break;
-
-        case ch4:
-            registers.OFF_H = PCA9685_LED4_OFF_H;
-            registers.OFF_L = PCA9685_LED4_OFF_L;
-            registers.ON_H = PCA9685_LED4_ON_H;
-            registers.ON_L = PCA9685_LED4_ON_L;
-            break;
-
-        case ch5:
-            registers.OFF_H = PCA9685_LED5_OFF_H;
-            registers.OFF_L = PCA9685_LED5_OFF_L;
-            registers.ON_H = PCA9685_LED5_ON_H;
-            registers.ON_L = PCA9685_LED5_ON_L;
-            break;
-
-        case ch6:
-            registers.OFF_H = PCA9685_LED6_OFF_H;
-            registers.OFF_L = PCA9685_LED6_OFF_L;
-            registers.ON_H = PCA9685_LED6_ON_H;
-            registers.ON_L = PCA9685_LED6_ON_L;
-            break;
-
-        case ch7:
-            registers.OFF_H = PCA9685_LED7_OFF_H;
-            registers.OFF_L = PCA9685_LED7_OFF_L;
-            registers.ON_H = PCA9685_LED7_ON_H;
-            registers.ON_L = PCA9685_LED7_ON_L;
-            break;
-
-        case ch8:
-            registers.OFF_H = PCA9685_LED8_OFF_H;
-            registers.OFF_L = PCA9685_LED8_OFF_L;
-            registers.ON_H = PCA9685_LED8_ON_H;
-            registers.ON_L = PCA9685_LED8_ON_L;
-            break;
-
-        case ch9:
-            registers.OFF_H = PCA9685_LED9_OFF_H;
-            registers.OFF_L = PCA9685_LED9_OFF_L;
-            registers.ON_H = PCA9685_LED9_ON_H;
-            registers.ON_L = PCA9685_LED9_ON_L;
-            break;
-
-        case ch10:
-            registers.OFF_H = PCA9685_LED10_OFF_H;
-            registers.OFF_L = PCA9685_LED10_OFF_L;
-            registers.ON_H = PCA9685_LED10_ON_H;
-            registers.ON_L = PCA9685_LED10_ON_L;
-            break;
-
-        case ch11:
-            registers.OFF_H = PCA9685_LED11_OFF_H;
-            registers.OFF_L = PCA9685_LED11_OFF_L;
-            registers.ON_H = PCA9685_LED11_ON_H;
-            registers.ON_L = PCA9685_LED11_ON_L;
-            break;
-
-        case ch12:
-            registers.OFF_H = PCA9685_LED12_OFF_H;
-            registers.OFF_L = PCA9685_LED12_OFF_L;
-            registers.ON_H = PCA9685_LED12_ON_H;
-            registers.ON_L = PCA9685_LED12_ON_L;
-            break;
-
-        case ch13:
-            registers.OFF_H = PCA9685_LED13_OFF_H;
-            registers.OFF_L = PCA9685_LED13_OFF_L;
-            registers.ON_H = PCA9685_LED13_ON_H;
-            registers.ON_L = PCA9685_LED13_ON_L;
-            break;
-
-        case ch14:
-            registers.OFF_H = PCA9685_LED14_OFF_H;
-            registers.OFF_L = PCA9685_LED14_OFF_L;
-            registers.ON_H = PCA9685_LED14_ON_H;
-            registers.ON_L = PCA9685_LED14_ON_L;
-            break;
-
-        case ch15:
-            registers.OFF_H = PCA9685_LED15_OFF_H;
-            registers.OFF_L = PCA9685_LED15_OFF_L;
-            registers.ON_H = PCA9685_LED15_ON_H;
-            registers.ON_L = PCA9685_LED15_ON_L;
-            break;
-
-        case all:
-            registers.OFF_H = PCA9685_ALL_LED_OFF_H;
-            registers.OFF_L = PCA9685_ALL_LED_OFF_L;
-            registers.ON_H = PCA9685_ALL_LED_ON_H;
-            registers.ON_L = PCA9685_ALL_LED_ON_L;
-            break;
-    }
-
-    //algorithm is time-on to time-off (delay is defined when time-on >0)
-
-    if (dutyCycle == 0) {
-        OFF_H.fields.fullOff = 1;
-        ON_H.fields.fullOn = 0;
-    } else if (dutyCycle >= 4096) {
-        OFF_H.fields.fullOff = 0;
-        ON_H.fields.fullOn = 1;
-    } else {
-        OFF_L.fields.value = (dutyCycle & 0x0FF);
-        OFF_H.fields.value = (dutyCycle & 0xF00) >> 8;
-        ON_L.fields.value = 0;
-        ON_H.fields.value = 0;
-    }
-
-    printf("%d\t%x\t%x\t%x\t%x\t\n", dutyCycle, OFF_H.raw, OFF_L.raw, ON_H.raw, ON_L.raw);
-
-    PCA9685_WriteRegister(registers.OFF_H, OFF_H.raw);
-    PCA9685_WriteRegister(registers.OFF_L, OFF_L.raw);
-    PCA9685_WriteRegister(registers.ON_H, ON_H.raw);
-    PCA9685_WriteRegister(registers.ON_L, ON_L.raw);
-
-
-
+  if (value)
+    pca9685FullOn(fd, ipin, 1);
+  else
+    pca9685FullOff(fd, ipin, 1);
 }
 
-void PCA9685_SetFrequency(uint8_t frequency) {
+/**
+ * Reads off registers as 16 bit of data
+ * To get PWM: mask with 0xFFF
+ * To get full-off bit: mask with 0x1000
+ * Note: ALL_LED pin will always return 0
+ */
+static int myOffRead(struct wiringPiNodeStruct *node, int pin)
+{
+  int fd   = node->fd;
+  int ipin = pin - node->pinBase;
 
+  int off;
+  pca9685PWMRead(fd, ipin, 0, &off);
+
+  return off;
 }
 
-void PCA9685_Restart() {
+/**
+ * Reads on registers as 16 bit of data
+ * To get PWM: mask with 0xFFF
+ * To get full-on bit: mask with 0x1000
+ * Note: ALL_LED pin will always return 0
+ */
+static int myOnRead(struct wiringPiNodeStruct *node, int pin)
+{
+  int fd   = node->fd;
+  int ipin = pin - node->pinBase;
 
-    wiringPiI2CWrite (i2c_fd, 0x00);
-    wiringPiI2CWrite (i2c_fd, 0x06);
+  int on;
+  pca9685PWMRead(fd, ipin, &on, 0);
 
-    printf("Reset\n");
+  return on;
 }
+
+
+
+
+
+
