@@ -35,7 +35,7 @@ int main(int argc, char **argv)
   {
     // Make ALL pins dim down and up
     cout << ANSI_COLOR_RED << "ALL PINS" << ANSI_COLOR_RESET << endl;
-    for (j = 0; j < 20; j++)
+    for (j = 0; j < 10; j++)
     {
       if(!ros::ok())
         break;
@@ -44,12 +44,16 @@ int main(int argc, char **argv)
       {
         pwmWrite(PIN_BASE + NUM_PINS, i);
         delay(5);
+        if(!ros::ok())
+          break;
       }
 
       for (i = 0; i < MAX_PWM; i += 8)
       {
         pwmWrite(PIN_BASE + NUM_PINS, MAX_PWM - i);
         delay(5);
+        if(!ros::ok())
+          break;
       }
     }
 
@@ -67,11 +71,15 @@ int main(int argc, char **argv)
       {
         pwmWrite(PIN_BASE + i, MAX_PWM);
         delay(20);
+        if(!ros::ok())
+          break;
       }
       for (i = 0; i < 16; i++)
       {
         pwmWrite(PIN_BASE + i, 0);
         delay(20);
+        if(!ros::ok())
+          break;
       }
     }
     pwmWrite(PIN_BASE + 16, 0);
