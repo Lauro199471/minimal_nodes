@@ -37,6 +37,9 @@ int main(int argc, char **argv)
     cout << ANSI_COLOR_RED << "ALL PINS" << ANSI_COLOR_RESET << endl;
     for (j = 0; j < 20; j++)
     {
+      if(ros::ok)
+        break;
+
       for (i = 0; i < MAX_PWM; i += 16) // 16 because its too slow to light up and dim
       {
         pwmWrite(PIN_BASE + NUM_PINS, i);
@@ -55,8 +58,11 @@ int main(int argc, char **argv)
 
     // Make Individual Pins turn off and on
     cout << ANSI_COLOR_MAGENTA << "ONE BY ONE" << ANSI_COLOR_RESET << endl;
-    for (j = 0; j < 5; j++)
+    for (j = 0; j < 20; j++)
     {
+      if(ros::ok)
+        break;
+
       for (i = 0; i < 16; i++)
       {
         pwmWrite(PIN_BASE + i, MAX_PWM);
