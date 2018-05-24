@@ -10,6 +10,7 @@
 
 #define PIN_BASE 100
 #define MAX_PWM 4096
+#define NUM_PINS 16 // PCA9685 has 16 pwm pins
 #define HERTZ 50
 
 using namespace std;
@@ -32,24 +33,28 @@ int main(int argc, char **argv)
 
   while(ros::ok())
   {
-    for (j = 0; j < 5; j++)
+    // Make ALL pins dim down and up
+    cout << ANSI_COLOR_RED << "ALL PINS" << ANSI_COLOR_RESET << endl;
+    for (j = 0; j < 100; j++)
     {
-      for (i = 0; i < MAX_PWM; i += 32)
+      for (i = 0; i < MAX_PWM; i += 1)
       {
-        pwmWrite(PIN_BASE + 16, i);
-        delay(4);
+        pwmWrite(PIN_BASE + NUM_PINS, i);
+        delay(1);
       }
 
-      for (i = 0; i < MAX_PWM; i += 32)
+      for (i = 0; i < MAX_PWM; i += 1)
       {
-        pwmWrite(PIN_BASE + 16, MAX_PWM - i);
-        delay(4);
+        pwmWrite(PIN_BASE + NUM_PINS, MAX_PWM - i);
+        delay(1);
       }
     }
 
-    pwmWrite(PIN_BASE + 16, 0);
+    pwmWrite(PIN_BASE + NUM_PINS, 0);
     delay(500);
 
+    // Make Individual Pins turn off and on
+    cout << ANSI_COLOR_MAGENTA << "ONE BY ONE" << ANSI_COLOR_RESET << endl;
     for (j = 0; j < 5; j++)
     {
       for (i = 0; i < 16; i++)
