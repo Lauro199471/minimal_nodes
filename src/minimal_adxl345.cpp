@@ -23,6 +23,7 @@
 #include <wiringPiI2C.h>
 #include <ros/ros.h>
 #include <wiringPi.h>
+#include <math.h>
 
 using namespace std;
 
@@ -84,6 +85,10 @@ struct acc_dat adxl345_read_xyz(int fd)
 int main(int argc, char **argv)
 {
   int fd;
+  double angle_x = 0.0;
+  double angle_y = 0.0;
+  double angle_z = 0.0;
+
   struct acc_dat acc_xyz;
 
   // *** ROS Stuff ****
@@ -104,7 +109,13 @@ int main(int argc, char **argv)
   while(ros::ok())
   {
     acc_xyz = adxl345_read_xyz(fd);
-    printf("x: %d  y: %d  z: %d\n", acc_xyz.x, acc_xyz.y, acc_xyz.z);
+    //printf("x: %d  y: %d  z: %d\n", acc_xyz.x, acc_xyz.y, acc_xyz.z);
+    angle_x = atan( angle_x / (sqrt((angle_z * angle_z) + (angle_z * angle_z))));
+    angle_y = atan( angle_y / (sqrt((angle_x * angle_x) + (angle_z * angle_z))));
+    angle_z = atan( sqrt((angle_x * angle_x) + (angle_z * angle_z)) / angle_z);
+
+    printf("x: %3f  y: %3f  z: %3f\n", angle_x , angle_y , angle_z);
+
     r.sleep();
   }
 
