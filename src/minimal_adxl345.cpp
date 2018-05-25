@@ -114,6 +114,15 @@ int main(int argc, char **argv)
     angle_y = atan( acc_xyz.y / (sqrt((acc_xyz.x * acc_xyz.x) + (acc_xyz.z * acc_xyz.z))));
     angle_z = atan( sqrt((acc_xyz.x * acc_xyz.x) + (acc_xyz.y * acc_xyz.y)) / acc_xyz.z);
 
+    angle_x = angle_x * 180;
+    angle_x = angle_x / 3.141592;
+
+    angle_y = angle_y * 180;
+    angle_y = angle_y / 3.141592;
+
+    angle_z = angle_z * 180;
+    angle_z = angle_z / 3.141592;
+
     printf("x: %3f  y: %3f  z: %3f\n", angle_x , angle_y , angle_z);
 
     r.sleep();
