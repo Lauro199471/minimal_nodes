@@ -38,7 +38,7 @@ void adxl345_init(int fd)
 {
   wiringPiI2CWriteReg8(fd, 0x31, 0x0b);
   wiringPiI2CWriteReg8(fd, 0x2d, 0x08);
-//	wiringPiI2CWriteReg8(fd, 0x2e, 0x00);
+  wiringPiI2CWriteReg8(fd, 0x2e, 0x00);
   wiringPiI2CWriteReg8(fd, 0x1e, 0x00);
   wiringPiI2CWriteReg8(fd, 0x1f, 0x00);
   wiringPiI2CWriteReg8(fd, 0x20, 0x00);
@@ -68,21 +68,15 @@ struct acc_dat adxl345_read_xyz(int fd)
   x0 = 0xff - wiringPiI2CReadReg8(fd, 0x32);
   x1 = 0xff - wiringPiI2CReadReg8(fd, 0x33);
 
-  if(x1 == 0) // positive side
-    acc_xyz.x = x0;
-  else
-    acc_xyz.x = (x1 - x0) * -1;
-
   y0 = 0xff - wiringPiI2CReadReg8(fd, 0x34);
   y1 = 0xff - wiringPiI2CReadReg8(fd, 0x35);
+
   z0 = 0xff - wiringPiI2CReadReg8(fd, 0x36);
   z1 = 0xff - wiringPiI2CReadReg8(fd, 0x37);
 
-  //acc_xyz.x = (int)(x1 << 8) + (int)x0;
+  acc_xyz.x = (int)(x1 << 8) + (int)x0;
   acc_xyz.y = (int)(y1 << 8) + (int)y0;
   acc_xyz.z = (int)(z1 << 8) + (int)z0;
-
-  printf("x0: %d  x1: %d  y0: %d  y1: %d  z0: %d  z1: %d\n", x0, x1, y0, y1, z0, z1);
 
   return acc_xyz;
 }
@@ -106,7 +100,7 @@ int main(int argc, char **argv)
 
   adxl345_init(fd);
 
-  ros::Rate r(1000); // 1hz for spin
+  ros::Rate r(1000); // 1khz for spin
   while(ros::ok())
   {
     acc_xyz = adxl345_read_xyz(fd);
