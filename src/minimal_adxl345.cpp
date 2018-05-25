@@ -105,7 +105,7 @@ int main(int argc, char **argv)
 
   adxl345_init(fd);
 
-  ros::Rate r(1000); // 1khz for spin
+  ros::Rate r(1); // 1khz for spin
   while(ros::ok())
   {
     acc_xyz = adxl345_read_xyz(fd);
