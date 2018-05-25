@@ -1,3 +1,26 @@
+/**********************************************************************;
+* Project           : Simple ADC I2C
+*
+* Program name      : minimal_ads1115.cpp
+*
+* Engineer          : Lauro Cabral
+*
+* Date created      : May 24 , 2018
+*
+* Purpose           : Get Analog values
+*
+* Revision History  : 0.1
+*
+* Notes             :
+*                     VCC : 5V
+*                     GND  : GND
+*                     ADDR:
+*                          Address 0x48: GND
+*                          Address 0x49: 5V
+*                          Address 0x4A: SDA
+*                          Address 0x4B: SCL
+**********************************************************************/
+
 #include <wiringPi.h>
 #include <stdio.h>
 #include <ros/ros.h>
