@@ -1,4 +1,22 @@
-// Simple C++ program to display "Hello World"
+/**********************************************************************;
+* Project           : Simple Starter Code
+*
+* Program name      : minimal_adxl345.cpp
+*
+* Engineer          : Lauro Cabral
+*
+* Date created      : May 25 , 2018
+*
+* Purpose           : Simple code for the ADXL345 sensor
+*
+* Revision History  : 0.1
+*
+* Notes             :
+*                     GND  : GND
+*                     VCC  : 3.3V
+*                     SCL  : Pin 5
+*                     SDA  : Pin 3
+**********************************************************************/
 
 // Header file for input output functions
 #include<iostream>
@@ -88,7 +106,7 @@ int main(int argc, char **argv)
 
   adxl345_init(fd);
 
-  ros::Rate r(3); // 1hz for spin
+  ros::Rate r(1000); // 1hz for spin
   while(ros::ok())
   {
     acc_xyz = adxl345_read_xyz(fd);
