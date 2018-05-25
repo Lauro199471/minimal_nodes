@@ -110,9 +110,9 @@ int main(int argc, char **argv)
   {
     acc_xyz = adxl345_read_xyz(fd);
     //printf("x: %d  y: %d  z: %d\n", acc_xyz.x, acc_xyz.y, acc_xyz.z);
-    angle_x = atan( angle_x / (sqrt((angle_z * angle_z) + (angle_z * angle_z))));
-    angle_y = atan( angle_y / (sqrt((angle_x * angle_x) + (angle_z * angle_z))));
-    angle_z = atan( sqrt((angle_x * angle_x) + (angle_z * angle_z)) / angle_z);
+    angle_x = atan( acc_xyz.x / (sqrt((acc_xyz.y * acc_xyz.y) + (acc_xyz.z * acc_xyz.z))));
+    angle_y = atan( acc_xyz.y / (sqrt((acc_xyz.x * acc_xyz.x) + (acc_xyz.z * acc_xyz.z))));
+    angle_z = atan( sqrt((acc_xyz.x * acc_xyz.x) + (acc_xyz.y * acc_xyz.y)) / acc_xyz.z);
 
     printf("x: %3f  y: %3f  z: %3f\n", angle_x , angle_y , angle_z);
 
