@@ -109,7 +109,7 @@ int main(int argc, char **argv)
   while(ros::ok())
   {
     acc_xyz = adxl345_read_xyz(fd);
-    //printf("x: %d  y: %d  z: %d\n", acc_xyz.x, acc_xyz.y, acc_xyz.z);
+
     angle_x = atan( acc_xyz.x / (sqrt((acc_xyz.y * acc_xyz.y) + (acc_xyz.z * acc_xyz.z))));
     angle_y = atan( acc_xyz.y / (sqrt((acc_xyz.x * acc_xyz.x) + (acc_xyz.z * acc_xyz.z))));
     angle_z = atan( sqrt((acc_xyz.x * acc_xyz.x) + (acc_xyz.y * acc_xyz.y)) / acc_xyz.z);
@@ -123,7 +123,8 @@ int main(int argc, char **argv)
     angle_z = angle_z * 180;
     angle_z = angle_z / 3.141592;
 
-    printf("x: %3f  y: %3f  z: %3f\n", angle_x , angle_y , angle_z);
+    printf("x: %d  y: %d  z: %d\n", acc_xyz.x, acc_xyz.y, acc_xyz.z);
+    printf("Dx: %3f  Dy: %3f  Dz: %3f\n", angle_x , angle_y , angle_z);
 
     r.sleep();
   }
